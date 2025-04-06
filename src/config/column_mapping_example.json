@@ -1,0 +1,25 @@
+{
+    "Store": ["POS Name", "Store Name", "STORE DATA JANUARY 2025", "STORE DATA AS OF JANUARY 31"],
+    "Retailer": ["Retailer", "Retailer Name"],
+    "Territory": ["Territory", "Store Tagging Territory", "Region"],
+    "Manager": ["TSM", "Manager", "Supervisor"],
+    "Sales": ["Retail Sales", "Sales", "Total Sales"],
+    "Brand A Sales": ["Tonik Sales", "Brand A"],
+    "Brand B Sales": ["NC Sales", "HC Sales", "Brand B"],
+    "Brand C Sales": ["Skyro Sales", "Brand C"],
+    "Brand D Sales": ["Salmon", "Brand D"],
+    "Payment Method": {
+        "In-House": ["In-House", "Store Credit"],
+        "Credit Card": ["Credit card", "Card Payment"],
+        "Cash": ["Cash Sales", "Cash"],
+        "Other": ["Others", "Other Payment"]
+    },
+    "Headcount": {
+        "Retailer": ["Retailer Headcount", "Store Staff"],
+        "Brand A": ["Tonik Headcount", "Tonik Promoter Count", "Brand A Staff"],
+        "Brand B": ["NC Headcount", "HC Promoter Count", "Brand B Staff"],
+        "Brand C": ["Skyro Headcount", "Brand C Staff"],
+        "Brand D": ["Salmon Headcount", "Brand D Staff"]
+    },
+    "Notes": ["Remarks", "Comments", "Notes"]
+}

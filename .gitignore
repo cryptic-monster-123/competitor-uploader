@@ -1,0 +1,39 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Output files
+output/csv/*
+output/excel/*
+!output/csv/.gitkeep
+!output/excel/.gitkeep
+
+# Temporary Excel files
+~$*.xlsx
+~$*.xls
+~$*.xlsm
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
