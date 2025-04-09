@@ -261,42 +261,17 @@ def concatenate_excel_to_csv(folder_path, output_path, template_path, file_patte
                     
                 src_col = file_col_mapping.get(template_col)
                 if src_col is not None:
-                    # For numeric columns, handle special cases
-                    if ('sales' in original_col.lower() or 
-                        'headcount' in original_col.lower() or 
-                        'count' in original_col.lower() or
-                        'amount' in original_col.lower()):
-                        
-                        # Convert to string first to handle special characters
-                        temp_series = df[src_col].astype(str).str.strip()
-                        
-                        # Replace all null value characters with NaN
-                        for null_char in NULL_VALUE_CHARS:
-                            temp_series = temp_series.replace(null_char, pd.NA)
-                        
-                        # Also replace any string that contains only these characters
-                        temp_series = temp_series.replace(r'^[\s\-–—]+$', pd.NA, regex=True)
-                        
-                        # Log the conversion for debugging
-                        non_numeric_count = sum(~pd.to_numeric(temp_series, errors='coerce').notna() & temp_series.notna())
-                        if non_numeric_count > 0:
-                            logger.info(f"Column '{original_col}' from '{file.name}': {non_numeric_count} non-numeric values converted to NaN")
-                        
-                        # Convert to numeric, coercing errors to NaN
-                        new_df[original_col] = pd.to_numeric(temp_series, errors='coerce')
-                    else:
-                        # For non-numeric columns, still handle dash characters
-                        temp_series = df[src_col].fillna('').astype(str).str.strip()
-                        
-                        # Replace all null value characters with NaN
-                        for null_char in NULL_VALUE_CHARS:
-                            temp_series = temp_series.replace(null_char, pd.NA)
-                        
-                        # Also replace any string that contains only these characters
-                        temp_series = temp_series.replace(r'^[\s\-–—]+$', pd.NA, regex=True)
-                        
-                        new_df[original_col] = temp_series
-                    
+                    # Always treat as string and handle nulls
+                    temp_series = df[src_col].fillna('').astype(str).str.strip()
+
+                    # Replace all null value characters with NaN
+                    for null_char in NULL_VALUE_CHARS:
+                        temp_series = temp_series.replace(null_char, pd.NA)
+
+                    # Also replace any string that contains only these characters
+                    temp_series = temp_series.replace(r'^[\s\-–—]+$', pd.NA, regex=True)
+
+                    new_df[original_col] = temp_series
                     matched_count += 1
                 else:
                     new_df[original_col] = pd.NA  # Use NA instead of empty strings
