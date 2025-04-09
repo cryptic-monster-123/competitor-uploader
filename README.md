@@ -54,35 +54,33 @@ competitor-uploader/
 
 ## Quick Start
 
-1. Install the required packages:
-   ```
-   pip install -r requirements.txt
-   ```
+1. **Set up the environment:**
+   - Create and activate the virtual environment (see Installation section).
+   - Install dependencies: `pip install -r requirements.txt`
 
-2. Generate sample data for testing:
-   ```
+2. **Generate sample data (optional):**
+   ```bash
    python src/concatenators/create_sample_data.py
    ```
-   This creates sample Excel files in the `test_data` directory.
+   *(Ensure the virtual environment is active before running)*
 
-3. Run the basic concatenator (for files with identical columns):
-   ```
-   python src/concatenators/excel_concatenator.py data/test -o output/excel/combined_result.xlsx
-   ```
+3. **Run the concatenators:**
+   *(Ensure the virtual environment is active before running)*
+   - Basic:
+     ```bash
+     python src/concatenators/excel_concatenator.py data/test -o output/excel/combined_result.xlsx
+     ```
+   - Enhanced:
+     ```bash
+     python src/concatenators/excel_concatenator_enhanced.py data/test -o output/excel/combined_result_enhanced.xlsx
+     ```
+   - Template-based:
+     ```bash
+     python src/concatenators/excel_concatenator_template.py data/test -o output/excel/combined_result_template.xlsx -t templates/uploader_template.xlsx
+     ```
 
-4. Run the enhanced concatenator (for files with different column names):
-   ```
-   python src/concatenators/excel_concatenator_enhanced.py data/test -o output/excel/combined_result_enhanced.xlsx
-   ```
-
-5. Run the template-based concatenator (to match a specific column structure):
-   ```
-   python src/concatenators/excel_concatenator_template.py data/test -o output/excel/combined_result_template.xlsx -t templates/uploader_template.xlsx
-   ```
-
-6. Alternatively, use the interactive scripts:
-   - Windows: Double-click `run_concatenator.bat`
-   - Linux/macOS: Run `./run_concatenator.sh` (make it executable first with `chmod +x run_concatenator.sh`)
+4. **Interactive Scripts:**
+   - The `.bat` and `.sh` scripts might need updating to activate the virtual environment first, or you should activate the environment manually before running them.
 
 ## Requirements
 
@@ -93,11 +91,21 @@ competitor-uploader/
 ## Installation
 
 1. Ensure you have Python installed on your system.
-2. Install the required packages:
-
-```
-pip install pandas openpyxl
-```
+2. **Create and activate a virtual environment:**
+   - Create the environment (if it doesn't exist):
+     ```bash
+     python -m venv .venv
+     ```
+   - Activate the environment:
+     - Windows (cmd): `\.venv\Scripts\activate.bat`
+     - Windows (PowerShell): `\.venv\Scripts\Activate.ps1`
+     - Linux/macOS: `source .venv/bin/activate`
+3. **Install the required packages:**
+   Once the virtual environment is activated, install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   *(Note: The original `requirements.txt` listed `pandas` and `openpyxl`. It has been updated to include `fuzzywuzzy` and `python-Levenshtein` as well.)*
 
 ## Using as a Python Package
 

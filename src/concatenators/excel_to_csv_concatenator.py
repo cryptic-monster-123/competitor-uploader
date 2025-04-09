@@ -28,7 +28,7 @@ SPECIAL_MAPPINGS = {
     'skyro headcount': ['skyro promoter count', 'skyro headcount', 'headcount skyro'],
     'salmon headcount': ['salmon promoter count', 'salmon headcount', 'headcount salmon'],
     'retailer headcount': ['retailer promoter count', 'retailer headcount', 'headcount retailer'],
-    'brand': ['brand', 'retailer', 'retailer name']
+    'brand': ['brand', 'retailer', 'retailer name', 'Brand']
 }
 
 # Characters that should be treated as empty/null values

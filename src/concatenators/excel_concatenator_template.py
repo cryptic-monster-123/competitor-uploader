@@ -27,7 +27,7 @@ def concatenate_excel_files_with_template(folder_path, output_path, template_pat
     # Create a log file for detailed debugging
     import datetime
     log_file = f"concatenator_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    
+
     def log_message(message):
         print(message)
         with open(log_file, "a") as f:
