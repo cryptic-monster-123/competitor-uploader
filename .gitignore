@@ -10,6 +10,7 @@ build/
 
 # Virtual environments
 venv/
+.venv/
 env/
 ENV/
 
@@ -37,3 +38,19 @@ output/excel/*
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Data files (contain sensitive business data)
+data/
+!data/.gitkeep
+
+# Test data
+test_data/
+
+# Test scripts
+test_*.py
+
+# Scripts directory (seems to contain temporary scripts)
+scripts/
+
+# Archive folders
+output/archive/

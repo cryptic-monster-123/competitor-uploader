@@ -7,6 +7,8 @@ from google.cloud.exceptions import NotFound
 import sys
 import tempfile
 import uuid
+from datetime import datetime
+import pytz
 
 def upload_csv_to_bigquery(csv_file_path, project_id, dataset_id, table_id):
     """
@@ -30,35 +32,38 @@ def upload_csv_to_bigquery(csv_file_path, project_id, dataset_id, table_id):
         print(f"Source CSV file: {csv_file_path}")
 
         # Define the schema to match the existing BigQuery table.
-        # The pandas transformation handles the 'Feb-25' format before loading.
-        print("Defining schema to match BigQuery table (datePeriod as DATE).")
+        # All columns are set to STRING, except for datePeriod which is DATE.
+        print("Defining schema for BigQuery table (all columns as STRING, datePeriod as DATE).")
         schema = [
             bigquery.SchemaField("purpleKey", "STRING"),
             bigquery.SchemaField("storeName", "STRING"),
             bigquery.SchemaField("retailerName", "STRING"),
             bigquery.SchemaField("storeTagging", "STRING"),
-            bigquery.SchemaField("dateOpened", "STRING"), # Consider DATE/TIMESTAMP if format allows
+            bigquery.SchemaField("dateOpened", "STRING"),
             bigquery.SchemaField("Territory", "STRING"),
             bigquery.SchemaField("TSM", "STRING"),
             bigquery.SchemaField("TSS", "STRING"),
             bigquery.SchemaField("Region", "STRING"),
             bigquery.SchemaField("RSM", "STRING"),
-            bigquery.SchemaField("tonikSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("hcSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("skyroSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("salmonSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("inHouseSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("creditCardSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("cashSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("otherSales", "STRING"), # Consider NUMERIC/FLOAT/INTEGER
-            bigquery.SchemaField("retailerHeadcount", "STRING"), # Consider INTEGER
-            bigquery.SchemaField("tonikHeadcount", "STRING"), # Consider INTEGER
-            bigquery.SchemaField("hcHeadcount", "STRING"), # Consider INTEGER
-            bigquery.SchemaField("skyroHeadcount", "STRING"), # Consider INTEGER
-            bigquery.SchemaField("salmonHeadcount", "STRING"), # Consider INTEGER
-            bigquery.SchemaField("storeHeadcount", "STRING"), # Consider INTEGER
+            bigquery.SchemaField("tonikSales", "STRING"),
+            bigquery.SchemaField("hcSales", "STRING"),
+            bigquery.SchemaField("skyroSales", "STRING"),
+            bigquery.SchemaField("salmonSales", "STRING"),
+            bigquery.SchemaField("inHouseSales", "STRING"),
+            bigquery.SchemaField("creditCardSales", "STRING"),
+            bigquery.SchemaField("cashSales", "STRING"),
+            bigquery.SchemaField("otherSales", "STRING"),
+            bigquery.SchemaField("retailerHeadcount", "STRING"),
+            bigquery.SchemaField("tonikHeadcount", "STRING"),
+            bigquery.SchemaField("hcHeadcount", "STRING"),
+            bigquery.SchemaField("skyroHeadcount", "STRING"),
+            bigquery.SchemaField("salmonHeadcount", "STRING"),
+            bigquery.SchemaField("storeHeadcount", "STRING"),
             bigquery.SchemaField("sourceFile", "STRING"),
-            bigquery.SchemaField("datePeriod", "DATE"), # Matching existing table schema
+            bigquery.SchemaField("datePeriod", "DATE"),
+            bigquery.SchemaField("billeaseSales", "STRING"),
+            bigquery.SchemaField("billeaseHeadcount", "STRING"),
+            bigquery.SchemaField("upload_timestamp", "TIMESTAMP"),
         ]
 
         # Configure the load job
@@ -73,23 +78,78 @@ def upload_csv_to_bigquery(csv_file_path, project_id, dataset_id, table_id):
         # Read CSV using pandas
         try:
             # Specify dtype={'datePeriod': str} to ensure pandas reads it as text first
-            df = pd.read_csv(csv_file_path, dtype={'datePeriod': str})
+            df = pd.read_csv(csv_file_path, dtype=str)
             print(f"Successfully read {len(df)} rows from {csv_file_path}")
 
+            # Add upload timestamp
+            manila_tz = pytz.timezone('Asia/Manila')
+            upload_timestamp = datetime.now(manila_tz)
+            df['upload_timestamp'] = upload_timestamp
+            print(f"Added upload timestamp: {upload_timestamp}")
+
             # --- Date Transformation ---
-            print("Transforming 'datePeriod' column from 'Mon-YY' format to datetime objects...")
-            # Convert 'Feb-25' style dates to datetime objects. Errors='coerce' will turn invalid formats into NaT (Not a Time)
-            df['datePeriod'] = pd.to_datetime(df['datePeriod'], format='%b-%y', errors='coerce')
-
-            # Check for any dates that failed to parse
-            invalid_dates = df['datePeriod'].isna().sum()
-            if invalid_dates > 0:
-                print(f"Warning: {invalid_dates} rows had invalid date formats in 'datePeriod' and were set to null.")
-                # Optionally, handle or log these rows further if needed
-
-            # BigQuery client library usually handles datetime objects correctly when loading from DataFrame.
-            # Force formatting to YYYY-MM-DD string to ensure compatibility with BQ DATE type.
-            df['datePeriod'] = df['datePeriod'].dt.strftime('%Y-%m-%d')
+            print("Processing 'datePeriod' column...")
+            
+            # Check if datePeriod column exists
+            if 'datePeriod' in df.columns:
+                # First, check if dates are already in YYYY-MM-DD format
+                sample_dates = df['datePeriod'].dropna().head(5)
+                already_formatted = all(
+                    isinstance(date_val, str) and 
+                    len(str(date_val)) == 10 and 
+                    str(date_val).count('-') == 2 and
+                    str(date_val)[:4].isdigit()
+                    for date_val in sample_dates
+                )
+                
+                if already_formatted:
+                    print("datePeriod column is already in YYYY-MM-DD format, no transformation needed.")
+                else:
+                    print("Transforming 'datePeriod' column from various formats to YYYY-MM-DD...")
+                    
+                    # Try multiple date formats
+                    def parse_date_flexible(date_str):
+                        if pd.isna(date_str) or not date_str:
+                            return None
+                        
+                        date_str = str(date_str).strip()
+                        
+                        # Try different formats
+                        formats_to_try = [
+                            '%b-%y',      # May-25
+                            '%B %Y',      # May 2025
+                            '%b %Y',      # May 2025
+                            '%Y-%m',      # 2025-05
+                            '%Y-%m-%d'    # 2025-05-01
+                        ]
+                        
+                        for fmt in formats_to_try:
+                            try:
+                                parsed_date = pd.to_datetime(date_str, format=fmt)
+                                return parsed_date.strftime('%Y-%m-01')  # Always use first day of month
+                            except (ValueError, TypeError):
+                                continue
+                        
+                        # If all formats fail, try pandas' general parser
+                        try:
+                            parsed_date = pd.to_datetime(date_str, errors='coerce')
+                            if not pd.isna(parsed_date):
+                                return parsed_date.strftime('%Y-%m-01')
+                        except:
+                            pass
+                        
+                        print(f"Warning: Could not parse date '{date_str}', setting to null")
+                        return None
+                    
+                    # Apply the flexible parsing
+                    df['datePeriod'] = df['datePeriod'].apply(parse_date_flexible)
+                    
+                    # Check for any dates that failed to parse
+                    invalid_dates = df['datePeriod'].isna().sum()
+                    if invalid_dates > 0:
+                        print(f"Warning: {invalid_dates} rows had invalid date formats in 'datePeriod' and were set to null.")
+            else:
+                print("Warning: 'datePeriod' column not found in the CSV file.")
             # -------------------------
 
         except FileNotFoundError:
@@ -99,38 +159,16 @@ def upload_csv_to_bigquery(csv_file_path, project_id, dataset_id, table_id):
             print(f"Error reading CSV file {csv_file_path}: {e}")
             sys.exit(1)
 
-        # --- Load via Temporary File ---
-        temp_file_path = None
+        # --- Load directly from DataFrame ---
         try:
-            # Create a unique temporary file name
-            temp_dir = tempfile.gettempdir()
-            temp_file_name = f"bq_upload_{uuid.uuid4()}.csv"
-            temp_file_path = os.path.join(temp_dir, temp_file_name)
-
-            print(f"Saving transformed data to temporary file: {temp_file_path}")
-            # Save DataFrame to CSV without index and header
-            # BigQuery LoadJobConfig handles skipping the original header via skip_leading_rows=1
-            # The datePeriod column now contains 'YYYY-MM-DD' strings from the transformation step.
-            df.to_csv(temp_file_path, index=False, header=False) # Pandas handles date format correctly here
-
-            # Load data from the temporary file using load_table_from_file
-            print(f"Loading data from temporary file into BigQuery...")
-            with open(temp_file_path, "rb") as source_file:
-                # Pass the job_config which correctly defines datePeriod as DATE
-                job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
-
+            print("Loading data directly from DataFrame into BigQuery...")
+            job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
             print("Starting BigQuery load job...")
             job.result()  # Wait for the job to complete
-
-        finally:
-            # Clean up the temporary file
-            if temp_file_path and os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                    print(f"Removed temporary file: {temp_file_path}")
-                except OSError as e:
-                    print(f"Error removing temporary file {temp_file_path}: {e}")
-        # -----------------------------
+        except Exception as e:
+            print(f"Error loading data from DataFrame to BigQuery: {e}")
+            sys.exit(1)
+        # ------------------------------------
 
         # Check job status
         if job.errors:

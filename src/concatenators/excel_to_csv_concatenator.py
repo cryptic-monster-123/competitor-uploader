@@ -6,6 +6,7 @@ import re
 import logging
 from datetime import datetime
 from fuzzywuzzy import process
+from dateutil import parser as date_parser
 
 # Set up logging
 logging.basicConfig(
@@ -33,6 +34,48 @@ SPECIAL_MAPPINGS = {
 
 # Characters that should be treated as empty/null values
 NULL_VALUE_CHARS = ['-', '—', '–', '−', '⁃', '‐', '‑', '‒', '–', '—', '―', '⁓', '⁻', '₋', '−']
+
+def parse_period_to_date(period_str):
+    """
+    Parse various period formats and convert to standardized YYYY-MM-DD format for BigQuery DATE columns.
+    
+    Args:
+        period_str (str): Period string in various formats like "May 2025", "May-25", "2025-05", etc.
+    
+    Returns:
+        str: Standardized date in YYYY-MM-DD format (first day of the month)
+    """
+    if not period_str or pd.isna(period_str):
+        return None
+    period_str = str(period_str).strip()
+    try:
+        # Handle various formats
+        if re.match(r'^[A-Za-z]+-\d{2}$', period_str):  # "May-25" or "January-25" format
+            try:
+                parsed_date = datetime.strptime(period_str, '%b-%y')
+            except ValueError:
+                parsed_date = datetime.strptime(period_str, '%B-%y')
+        elif re.match(r'^[A-Za-z]+-\d{4}$', period_str):  # "May-2025" or "January-2025" format
+            try:
+                parsed_date = datetime.strptime(period_str, '%b-%Y')
+            except ValueError:
+                parsed_date = datetime.strptime(period_str, '%B-%Y')
+        elif re.match(r'^[A-Za-z]{3}\s+\d{4}$', period_str):  # "Jan 2024" format (abbreviated)
+            parsed_date = datetime.strptime(period_str, '%b %Y')
+        elif re.match(r'^[A-Za-z]+\s+\d{4}$', period_str):  # "January 2025" format (full name)
+            parsed_date = datetime.strptime(period_str, '%B %Y')
+        elif re.match(r'^\d{4}-\d{2}$', period_str):  # "2025-05" format
+            parsed_date = datetime.strptime(period_str, '%Y-%m')
+        elif re.match(r'^\d{4}-\d{2}-\d{2}$', period_str):  # "2025-05-01" format (already correct)
+            return period_str
+        else:
+            # Try to parse with dateutil as fallback
+            parsed_date = date_parser.parse(period_str)
+        # Return first day of the month in YYYY-MM-DD format
+        return parsed_date.strftime('%Y-%m-01')
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Could not parse period '{period_str}': {e}")
+        return None  # Return None if parsing fails for BigQuery compatibility
 
 def normalize_column_name(col_name):
     """Normalize column names for better matching."""
@@ -318,14 +361,56 @@ def concatenate_excel_to_csv(folder_path, output_path, template_path, file_patte
         if "Retailer Name" in combined_df.columns:
             combined_df = combined_df.rename(columns={"Retailer Name": "Retailer"})
         
-        # Add Period column if specified
+        # Handle datePeriod column - either from parameter or existing data
         if period:
-            combined_df["datePeriod"] = period
+            # Parse and standardize the period to proper date format
+            standardized_period = parse_period_to_date(period)
+            if standardized_period:
+                logger.info(f"Parsed period '{period}' to standardized date '{standardized_period}'")
+                combined_df["datePeriod"] = standardized_period
+            else:
+                logger.warning(f"Could not parse period '{period}', using original value")
+                combined_df["datePeriod"] = period
+        elif "datePeriod" in combined_df.columns:
+            # Standardize existing datePeriod column
+            logger.info("Standardizing existing datePeriod column")
+            combined_df["datePeriod"] = combined_df["datePeriod"].apply(parse_period_to_date)
+        
+        # Define the desired column order
+        desired_column_order = [
+            'purpleKey', 'storeName', 'retailerName', 'storeTagging', 'dateOpened',
+            'Territory', 'TSM', 'TSS', 'Region', 'RSM', 'tonikSales', 'hcSales',
+            'skyroSales', 'salmonSales', 'inHouseSales', 'creditCardSales',
+            'cashSales', 'otherSales', 'retailerHeadcount', 'tonikHeadcount',
+            'hcHeadcount', 'skyroHeadCount', 'salmonHeadCount', 'storeHeadcount',
+            'sourceFile', 'datePeriod', 'billeaseSales', 'billeaseHeadcount'
+        ]
+        
+        # Reorder columns to match desired sequence
+        # First, get all columns that exist in the dataframe
+        existing_columns = combined_df.columns.tolist()
+        
+        # Create the final column order by including only existing columns in the desired order
+        final_column_order = []
+        for col in desired_column_order:
+            if col in existing_columns:
+                final_column_order.append(col)
+        
+        # Add any remaining columns that weren't in the desired order (just in case)
+        for col in existing_columns:
+            if col not in final_column_order:
+                final_column_order.append(col)
+        
+        # Reorder the dataframe columns
+        combined_df = combined_df[final_column_order]
         
         # Replace spaces with underscores in all column names
-
         combined_df.columns = [col.replace(" ", "_") for col in combined_df.columns]
             
+        # Filter out records where 'Retailer' is null or empty
+        if 'Retailer' in combined_df.columns:
+            combined_df = combined_df[combined_df['Retailer'].notnull() & (combined_df['Retailer'].astype(str).str.strip() != '')]
+        
         combined_df.to_csv(output_path, index=False)
         logger.info(f"Successfully saved concatenated data to {output_path}")
         return True

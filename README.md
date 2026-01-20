@@ -270,3 +270,42 @@ This approach is simpler than creating a JSON mapping file and ensures the outpu
 Both versions:
 - Create the output directory if it doesn't exist
 - Support file pattern matching to select specific files
+
+## BigQuery Uploader
+
+The `src/uploaders/upload_to_bigquery.py` script uploads a CSV file to a Google BigQuery table.
+
+### Prerequisites
+
+1.  **Google Cloud Project**: You need a Google Cloud project with the BigQuery API enabled.
+2.  **Service Account**: You need a service account with the "BigQuery Data Editor" and "BigQuery Job User" roles. You will need to create and download a JSON key file for this service account.
+3.  **BigQuery Table**: You must have an existing BigQuery dataset and table. The script appends data and does not create the table. The table schema should match the one defined in the script.
+
+### Setup
+
+1.  **Install Dependencies**: Make sure you have installed the required Python packages.
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  **Create `.env` file**: Create a file named `.env` in the root of the project directory and add the following environment variables:
+    ```
+    GOOGLE_PROJECT_ID="your-gcp-project-id"
+    GOOGLE_DATASET_ID="your_bigquery_dataset_id"
+    GOOGLE_TABLE_ID="your_bigquery_table_id"
+    GOOGLE_APPLICATION_CREDENTIALS="path/to/your/service-account-key.json"
+    ```
+
+### Usage
+
+To run the script, use the following command, replacing `path/to/your/file.csv` with the actual path to the CSV file you want to upload:
+
+```bash
+python src/uploaders/upload_to_bigquery.py path/to/your/file.csv
+```
+
+The script will:
+1.  Read the environment variables from the `.env` file.
+2.  Read the specified CSV file.
+3.  Transform the `datePeriod` column to the `YYYY-MM-DD` format.
+4.  Upload the data to the specified BigQuery table.
