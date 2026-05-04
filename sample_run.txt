@@ -1,0 +1,4 @@
+
+
+
+python src/uploaders/upload_to_bigquery.py output/csv/combined_data_20250603_013051.csv

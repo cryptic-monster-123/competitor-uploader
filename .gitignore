@@ -11,6 +11,7 @@ build/
 # Virtual environments
 venv/
 .venv/
+.venv_runner/
 env/
 ENV/
 
@@ -39,6 +40,9 @@ output/excel/*
 .DS_Store
 Thumbs.db
 
+# Google Cloud credentials
+adc.json
+
 # Data files (contain sensitive business data)
 data/
 !data/.gitkeep
@@ -49,8 +53,11 @@ test_data/
 # Test scripts
 test_*.py
 
-# Scripts directory (seems to contain temporary scripts)
+# Scripts directory
 scripts/
 
 # Archive folders
 output/archive/
+
+# Log files
+concatenator_log_*.txt

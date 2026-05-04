@@ -1,0 +1,87 @@
+HOW TO RUN COMPETITOR-UPLOADER ON MACOS
+==========================================
+
+This guide provides instructions for running the competitor-uploader on macOS.
+
+PREREQUISITES
+------------
+- macOS operating system
+- Python 3.6 or higher
+- Terminal access
+
+SETUP INSTRUCTIONS
+-----------------
+
+1. Install Python (if not already installed)
+   Check if Python is installed:
+   $ python3 --version
+   
+   If not installed, download from python.org
+
+2. Create a virtual environment (recommended)
+   $ python3 -m venv .venv
+   $ source .venv/bin/activate
+
+3. Install dependencies
+   $ pip3 install -r requirements.txt
+
+4. Make shell scripts executable
+   $ chmod +x run_concatenator.sh run_csv_concatenator.sh
+
+5. Create necessary directories
+   $ mkdir -p output/excel output/csv logs
+
+RUNNING THE CONCATENATOR
+-----------------------
+
+Option 1: Using Shell Scripts
+-----------------------------
+
+Run the Excel concatenator (template-based):
+$ ./run_concatenator.sh
+
+Run the Excel to CSV concatenator:
+$ ./run_csv_concatenator.sh
+
+Option 2: Running Python Scripts Directly
+-----------------------------------------
+
+Basic Concatenator:
+$ python3 src/concatenators/excel_concatenator.py data/2024-01 -o output/excel/combined_result.xlsx
+
+Enhanced Concatenator:
+$ python3 src/concatenators/excel_concatenator_enhanced.py data/2024-01 -o output/excel/combined_result_enhanced.xlsx
+
+Template-based Concatenator:
+$ python3 src/concatenators/excel_concatenator_template.py data/2024-01 -o output/excel/combined_result_template.xlsx -t templates/uploader_template.xlsx
+
+Excel to CSV Concatenator:
+$ python3 src/concatenators/excel_to_csv_concatenator.py data/2025-03 -t templates/uploader_template.xlsx -o output/csv/combined_data_$(date +%Y%m%d_%H%M%S).csv -e "M POS Status" -p "March 2025"
+
+COMMAND PARAMETERS
+-----------------
+- folder: Path to the folder containing Excel files (required)
+- -o, --output: Path where the output file will be saved
+- -t, --template: Template Excel file with column structure (for template-based and CSV concatenators)
+- -p, --pattern: File pattern to match specific Excel files (e.g., "data_*.xlsx")
+- -e, --exclude: Columns to exclude from output (for CSV concatenator)
+- -p, --period: Add a Period column with the specified value (for CSV concatenator)
+
+TROUBLESHOOTING
+--------------
+
+1. Permission denied when running shell scripts:
+   Make sure the scripts are executable:
+   $ chmod +x run_concatenator.sh run_csv_concatenator.sh
+
+2. Python command not found:
+   Ensure you're using python3 instead of python on macOS:
+   $ python3 --version
+
+3. Missing dependencies:
+   Install all required packages:
+   $ pip3 install -r requirements.txt
+
+4. File not found errors:
+   Ensure all paths are correct and directories exist:
+   $ mkdir -p output/excel output/csv logs

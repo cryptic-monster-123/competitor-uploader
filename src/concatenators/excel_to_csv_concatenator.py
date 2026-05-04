@@ -207,6 +207,9 @@ def concatenate_excel_to_csv(folder_path, output_path, template_path, file_patte
     # Default columns to exclude
     if exclude_columns is None:
         exclude_columns = []
+
+    # Single timestamp for the whole run (same value for every processed row)
+    upload_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     
     logger.info(f"Starting concatenation process")
     logger.info(f"Template file: {template}")
@@ -329,6 +332,8 @@ def concatenate_excel_to_csv(folder_path, output_path, template_path, file_patte
             
             # Add file source information
             new_df['sourceFile'] = file.name
+            # Add an upload timestamp column for downstream BigQuery loads
+            new_df['upload_timestamp'] = upload_timestamp
             
             # Append to list of dataframes
             dfs.append(new_df)
